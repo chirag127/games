@@ -30,7 +30,7 @@ food_y = random.randint(20, screen_height/2)
 score = 0
 init_velocity = 5
 snake_size = 30
-fps = 60
+fps = 30
 
 clock = pygame.time.Clock()
 
