@@ -1,11 +1,7 @@
 import pygame
 import random
-import os
-
-pygame.mixer.init()
 
 pygame.init()
-
 
 # Colors
 white = (255, 255, 255)
@@ -16,12 +12,6 @@ black = (0, 0, 0)
 screen_width = 900
 screen_height = 600
 gameWindow = pygame.display.set_mode((screen_width, screen_height))
-
-# Background Image
-bgimg = pygame.image.load("snake.jpg")
-bgimg = pygame.transform.scale(
-    bgimg, (screen_width, screen_height)).convert_alpha()
-
 
 # Game Title
 pygame.display.set_caption("SnakesWithHarry")
@@ -51,8 +41,6 @@ def welcome():
                 exit_game = True
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    pygame.mixer.music.load('back.mp3')
-                    pygame.mixer.music.play()
                     gameloop()
 
         pygame.display.update()
@@ -70,11 +58,6 @@ def gameloop():
     velocity_y = 0
     snk_list = []
     snk_length = 1
-    # Check if hiscore file exists
-    if(not os.path.exists("hiscore.txt")):
-        with open("hiscore.txt", "w") as f:
-            f.write("0")
-
     with open("hiscore.txt", "r") as f:
         hiscore = f.read()
 
@@ -123,7 +106,7 @@ def gameloop():
                         velocity_x = 0
 
                     if event.key == pygame.K_q:
-                        score += 10
+                        score += 100
 
             snake_x = snake_x + velocity_x
             snake_y = snake_y + velocity_y
@@ -137,7 +120,6 @@ def gameloop():
                     hiscore = score
 
             gameWindow.fill(white)
-            gameWindow.blit(bgimg, (0, 0))
             text_screen("Score: " + str(score) +
                         "  Hiscore: "+str(hiscore), red, 5, 5)
             pygame.draw.rect(gameWindow, red, [
@@ -153,13 +135,9 @@ def gameloop():
 
             if head in snk_list[:-1]:
                 game_over = True
-                pygame.mixer.music.load('gameover.mp3')
-                pygame.mixer.music.play()
 
             if snake_x < 0 or snake_x > screen_width or snake_y < 0 or snake_y > screen_height:
                 game_over = True
-                pygame.mixer.music.load('gameover.mp3')
-                pygame.mixer.music.play()
             plot_snake(gameWindow, black, snk_list, snake_size)
         pygame.display.update()
         clock.tick(fps)
