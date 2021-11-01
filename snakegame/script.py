@@ -8,6 +8,8 @@ white = (255, 255, 255)
 red = (255, 0, 0)
 black = (0, 0, 0)
 
+
+# Game Window
 # Creating window
 screen_width = 900
 screen_height = 600
@@ -28,6 +30,8 @@ def text_screen(text, color, x, y):
 def plot_snake(gameWindow, color, snk_list, snake_size):
     for x, y in snk_list:
         pygame.draw.rect(gameWindow, color, [x, y, snake_size, snake_size])
+
+# Game Intro
 
 
 def welcome():
@@ -86,7 +90,7 @@ def gameloop():
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    exit_game = True
+                    exit_game = True 
 
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RIGHT:
