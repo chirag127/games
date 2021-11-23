@@ -124,7 +124,8 @@ def display_message(content):
     pygame.time.delay(500)
     win.fill(WHITE)
     end_text = END_FONT.render(content, 1, BLACK)
-    win.blit(end_text, ((WIDTH - end_text.get_width()) // 2, (WIDTH - end_text.get_height()) // 2))
+    win.blit(end_text, ((WIDTH - end_text.get_width()) //
+             2, (WIDTH - end_text.get_height()) // 2))
     pygame.display.update()
     pygame.time.delay(3000)
 
@@ -136,7 +137,8 @@ def render():
     # Drawing X's and O's
     for image in images:
         x, y, IMAGE = image
-        win.blit(IMAGE, (x - IMAGE.get_width() // 2, y - IMAGE.get_height() // 2))
+        win.blit(IMAGE, (x - IMAGE.get_width() //
+                 2, y - IMAGE.get_height() // 2))
 
     pygame.display.update()
 
