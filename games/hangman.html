@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hangman — oriz.games</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--accent:#6366f1;--green:#4ade80;--red:#f87171}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{width:100%;max-width:560px;padding:16px 20px 0;display:flex;justify-content:space-between;align-items:center}
+a.back{color:var(--muted);font-size:14px;text-decoration:none}a.back:hover{color:var(--text)}
+h1{font-size:24px;font-weight:800}
+button{cursor:pointer;border:none;font-family:inherit}
+.category-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:12px 20px 0}
+.cat-btn{background:var(--card);color:var(--muted);border:1px solid var(--border);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;transition:all .15s}
+.cat-btn.active,.cat-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+svg#gallows{display:block}
+.word-display{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:10px 20px}
+.letter-slot{width:clamp(22px,7vw,36px);height:clamp(28px,8vw,40px);border-bottom:2px solid #64748b;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5vw,26px);font-weight:700;text-transform:uppercase}
+.hint{color:var(--muted);font-size:13px;margin:4px 0 8px;text-align:center}
+.keyboard{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0 16px}
+.kb-row{display:flex;gap:5px}
+.kb-key{width:clamp(28px,8vw,38px);height:clamp(28px,8vw,38px);border-radius:6px;font-size:13px;font-weight:700;background:#334155;color:var(--text);text-transform:uppercase;transition:all .15s}
+.kb-key:hover:not(:disabled){background:var(--accent)}
+.kb-key:disabled{cursor:default;opacity:.4}
+.kb-key.hit{background:#14532d;color:var(--green)}
+.kb-key.miss{background:#450a0a;color:var(--red)}
+#statusMsg{font-size:16px;font-weight:700;text-align:center;height:26px;color:#facc15}
+.new-btn{background:var(--accent);color:#fff;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="../index.html">&#8592; Back</a>
+  <h1>Hangman</h1>
+  <button class="new-btn" onclick="newGame()">New</button>
+</header>
+<div class="category-bar">
+  <button class="cat-btn active" data-cat="animals">Animals</button>
+  <button class="cat-btn" data-cat="countries">Countries</button>
+  <button class="cat-btn" data-cat="tech">Tech</button>
+  <button class="cat-btn" data-cat="food">Food</button>
+  <button class="cat-btn" data-cat="sports">Sports</button>
+</div>
+
+<svg id="gallows" width="200" height="220" viewBox="0 0 200 220">
+  <line x1="10" y1="210" x2="190" y2="210" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+  <line x1="60" y1="210" x2="60" y2="10" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+  <line x1="60" y1="10" x2="130" y2="10" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+  <line x1="130" y1="10" x2="130" y2="35" stroke="#475569" stroke-width="4" stroke-linecap="round"/>
+  <!-- head --><circle id="h-head" cx="130" cy="50" r="15" stroke="#f87171" stroke-width="3" fill="none" opacity="0"/>
+  <!-- body --><line id="h-body" x1="130" y1="65" x2="130" y2="120" stroke="#f87171" stroke-width="3" opacity="0"/>
+  <!-- left arm --><line id="h-la" x1="130" y1="80" x2="108" y2="100" stroke="#f87171" stroke-width="3" opacity="0"/>
+  <!-- right arm --><line id="h-ra" x1="130" y1="80" x2="152" y2="100" stroke="#f87171" stroke-width="3" opacity="0"/>
+  <!-- left leg --><line id="h-ll" x1="130" y1="120" x2="108" y2="150" stroke="#f87171" stroke-width="3" opacity="0"/>
+  <!-- right leg --><line id="h-rl" x1="130" y1="120" x2="152" y2="150" stroke="#f87171" stroke-width="3" opacity="0"/>
+</svg>
+
+<div class="hint" id="hint"></div>
+<div class="word-display" id="wordDisplay"></div>
+<div id="statusMsg"></div>
+<div class="keyboard" id="keyboard"></div>
+
+<script>
+const WORDS={
+  animals:['elephant','dolphin','penguin','giraffe','cheetah','octopus','butterfly','kangaroo','rhinoceros','crocodile','flamingo','gorilla','peacock','jaguar','hamster','porcupine','chameleon','wolverine','platypus','salamander'],
+  countries:['australia','argentina','switzerland','portugal','indonesia','ukraine','malaysia','ethiopia','venezuela','cambodia','tanzania','zimbabwe','colombia','uzbekistan','afghanistan','bangladesh','mauritania','mongolia','nicaragua','mozambique'],
+  tech:['javascript','keyboard','algorithm','database','compiler','framework','bandwidth','encryption','blockchain','kubernetes','typescript','repository','microservice','cloudflare','javascript','tensorflow','kubernetes','container','middleware','pagination'],
+  food:['avocado','broccoli','eggplant','blueberry','pineapple','raspberry','watermelon','strawberry','asparagus','cauliflower','artichoke','persimmon','cantaloupe','pomegranate','grapefruit','butterscotch','marmalade','guacamole','bruschetta','quesadilla'],
+  sports:['basketball','volleyball','badminton','gymnastics','wrestling','skateboard','waterpolo','archery','triathlon','pentathlon','snowboard','equestrian','lacrosse','handball','bobsled','curling','fencing','cricket','baseball','football'],
+};
+const PARTS=['h-head','h-body','h-la','h-ra','h-ll','h-rl'];
+const MAX=6;
+let word,guessed,wrong,gameOver,cat='animals';
+
+function newGame(){
+  const list=WORDS[cat];
+  word=list[Math.floor(Math.random()*list.length)];
+  guessed=new Set();wrong=0;gameOver=false;
+  document.getElementById('statusMsg').textContent='';
+  PARTS.forEach(id=>document.getElementById(id).style.opacity='0');
+  renderWord();renderKeyboard();
+}
+
+function renderWord(){
+  const div=document.getElementById('wordDisplay');
+  div.innerHTML=word.split('').map(l=>`<div class="letter-slot">${guessed.has(l)?l:''}</div>`).join('');
+  document.getElementById('hint').textContent=`Category: ${cat} | ${wrong}/${MAX} wrong`;
+}
+
+function renderKeyboard(){
+  const kb=document.getElementById('keyboard');
+  const rows=['qwertyuiop','asdfghjkl','zxcvbnm'];
+  kb.innerHTML=rows.map(row=>`<div class="kb-row">${[...row].map(k=>{
+    let cls='kb-key';
+    if(guessed.has(k))cls+=word.includes(k)?' hit':' miss';
+    return `<button class="${cls}" data-k="${k}" ${guessed.has(k)?'disabled':''}>${k}</button>`;
+  }).join('')}</div>`).join('');
+  kb.querySelectorAll('.kb-key').forEach(b=>b.addEventListener('click',()=>guess(b.dataset.k)));
+}
+
+function guess(k){
+  if(gameOver||guessed.has(k))return;
+  guessed.add(k);
+  if(!word.includes(k)){
+    wrong++;
+    document.getElementById(PARTS[wrong-1]).style.opacity='1';
+  }
+  renderWord();renderKeyboard();
+  if(word.split('').every(l=>guessed.has(l))){gameOver=true;document.getElementById('statusMsg').textContent='You Win!';}
+  else if(wrong>=MAX){
+    gameOver=true;
+    word.split('').forEach((_,i)=>{document.getElementById('wordDisplay').children[i].textContent=word[i];});
+    document.getElementById('statusMsg').textContent='Game Over — '+word.toUpperCase();
+  }
+}
+
+document.addEventListener('keydown',e=>{if(/^[a-z]$/i.test(e.key))guess(e.key.toLowerCase());});
+
+document.querySelectorAll('.cat-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelector('.cat-btn.active').classList.remove('active');
+    b.classList.add('active');cat=b.dataset.cat;newGame();
+  });
+});
+
+newGame();
+</script>
+</body>
+</html>

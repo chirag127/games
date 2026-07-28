@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sliding Puzzle — oriz.games</title>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--accent:#6366f1}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+header{width:100%;max-width:500px;padding:16px 20px 0;display:flex;justify-content:space-between;align-items:center}
+a.back{color:var(--muted);font-size:14px;text-decoration:none}a.back:hover{color:var(--text)}
+h1{font-size:24px;font-weight:800}
+.toolbar{display:flex;gap:8px;justify-content:center;padding:12px 20px 8px}
+.sz-btn{background:var(--card);color:var(--muted);border:1px solid var(--border);padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.sz-btn.active,.sz-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.info{display:flex;gap:16px;margin-bottom:12px}
+.box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 18px;text-align:center}
+.box .l{font-size:11px;color:var(--muted);text-transform:uppercase}
+.box .v{font-size:20px;font-weight:700}
+#board{display:grid;gap:6px;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;width:min(90vw,400px)}
+.tile{display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:clamp(18px,6vw,32px);font-weight:800;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;user-select:none}
+.tile.empty{background:transparent;cursor:default}
+.tile:not(.empty):hover{opacity:.85;transform:scale(1.03)}
+#winMsg{display:none;flex-direction:column;align-items:center;gap:10px;margin-top:12px}
+#winMsg h2{color:#4ade80;font-size:28px}
+#winMsg p{color:var(--muted)}
+button.play-btn{cursor:pointer;border:none;background:var(--accent);color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:600}
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="../index.html">&#8592; Back</a>
+  <h1>Sliding Puzzle</h1>
+  <button class="play-btn" onclick="newGame()" style="padding:7px 14px;font-size:13px">New</button>
+</header>
+<div class="toolbar">
+  <button class="sz-btn active" data-s="3">3×3</button>
+  <button class="sz-btn" data-s="4">4×4</button>
+</div>
+<div class="info">
+  <div class="box"><div class="l">Moves</div><div class="v" id="moves">0</div></div>
+  <div class="box"><div class="l">Best</div><div class="v" id="best">—</div></div>
+</div>
+<div id="board"></div>
+<div id="winMsg">
+  <h2>Solved!</h2>
+  <p id="winTxt"></p>
+  <button class="play-btn" onclick="newGame()">Play Again</button>
+</div>
+
+<script>
+let size=3,tiles=[],blank,moves=0,best={};
+const KEY=()=>`sp-${size}`;
+
+function newGame(){
+  moves=0;
+  document.getElementById('moves').textContent=0;
+  document.getElementById('winMsg').style.display='none';
+  document.getElementById('best').textContent=best[KEY()]||'—';
+  tiles=Array.from({length:size*size},(_,i)=>i);
+  do{shuffle();}while(!isSolvable());
+  blank=tiles.indexOf(0);
+  render();
+}
+
+function shuffle(){for(let i=tiles.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[tiles[i],tiles[j]]=[tiles[j],tiles[i]];}}
+
+function isSolvable(){
+  const t=tiles.filter(x=>x);
+  let inv=0;
+  for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++)if(t[i]>t[j])inv++;
+  if(size%2===1)return inv%2===0;
+  const blankRow=Math.floor(tiles.indexOf(0)/size);
+  return (inv+size-1-blankRow)%2===0;
+}
+
+function render(){
+  const b=document.getElementById('board');
+  b.style.gridTemplateColumns=`repeat(${size},1fr)`;
+  const tileSize=`calc((min(90vw,400px) - ${(size+1)*6+20}px) / ${size})`;
+  b.innerHTML='';
+  tiles.forEach((v,i)=>{
+    const d=document.createElement('div');
+    d.className='tile'+(v===0?' empty':'');
+    d.style.height=tileSize;
+    d.textContent=v||'';
+    if(v)d.addEventListener('click',()=>tryMove(i));
+    b.appendChild(d);
+  });
+}
+
+function tryMove(idx){
+  const br=Math.floor(blank/size),bc=blank%size;
+  const tr=Math.floor(idx/size),tc=idx%size;
+  if(Math.abs(br-tr)+Math.abs(bc-tc)!==1)return;
+  [tiles[blank],tiles[idx]]=[tiles[idx],tiles[blank]];
+  blank=idx;
+  moves++;
+  document.getElementById('moves').textContent=moves;
+  render();
+  if(checkWin())showWin();
+}
+
+function checkWin(){return tiles.every((v,i)=>v===(i+1)%(size*size));}
+
+function showWin(){
+  if(!best[KEY()]||moves<best[KEY()]){best[KEY()]=moves;localStorage.setItem('sp-best-'+size,moves);}
+  document.getElementById('best').textContent=best[KEY()];
+  document.getElementById('winTxt').textContent=`Solved in ${moves} moves!`;
+  document.getElementById('winMsg').style.display='flex';
+}
+
+document.querySelectorAll('.sz-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelector('.sz-btn.active').classList.remove('active');
+    b.classList.add('active');
+    size=+b.dataset.s;
+    best[KEY()]=+localStorage.getItem('sp-best-'+size)||0;
+    newGame();
+  });
+});
+
+// touch swipe
+let tx,ty;
+document.getElementById('board').addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY;},{passive:true});
+document.getElementById('board').addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;
+  // move blank in swipe direction = move tile adjacent in opposite direction
+  let target=-1;
+  const br=Math.floor(blank/size),bc=blank%size;
+  if(Math.abs(dx)>Math.abs(dy)){
+    if(dx>0&&bc>0)target=blank-1;
+    else if(dx<0&&bc<size-1)target=blank+1;
+  } else {
+    if(dy>0&&br>0)target=blank-size;
+    else if(dy<0&&br<size-1)target=blank+size;
+  }
+  if(target>=0)tryMove(target);
+});
+
+best[KEY()]=+localStorage.getItem('sp-best-'+size)||0;
+newGame();
+</script>
+</body>
+</html>
